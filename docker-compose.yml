@@ -19,5 +19,13 @@ services:
       - ./yarn.lock:/opt/node_app/yarn.lock
       - notused:/opt/node_app/app/node_modules
 
+  backend:
+    build:
+      context: ./backend
+    container_name: areki_backend
+    ports:
+      - "3001:3001"
+    restart: on-failure
+
 volumes:
   notused:
