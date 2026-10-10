@@ -17,6 +17,13 @@ export default defineConfig(({ mode }) => {
       port: Number(envVars.VITE_APP_PORT || 3000),
       // open the browser
       open: true,
+      // mirror the production nginx setup (/api/* -> areki backend)
+      proxy: {
+        "/api": {
+          target: envVars.VITE_APP_AREKI_BACKEND_URL || "http://localhost:3001",
+          rewrite: (path) => path.replace(/^\/api/, ""),
+        },
+      },
     },
     // We need to specify the envDir since now there are no
     //more located in parallel with the vite.config.ts file but in parent dir
@@ -162,6 +169,8 @@ export default defineConfig(({ mode }) => {
         },
 
         workbox: {
+          // never answer backend calls with the cached index.html
+          navigateFallbackDenylist: [/^\/api\//],
           // don't precache fonts, locales and separate chunks
           globIgnores: [
             "fonts.css",

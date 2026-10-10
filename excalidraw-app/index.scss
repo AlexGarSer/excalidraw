@@ -128,3 +128,117 @@
     }
   }
 }
+
+.areki-case-scenes {
+  h3 {
+    margin: 1rem 0 0.25rem;
+    font-size: 1rem;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  button {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 0;
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--color-on-surface);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--button-hover-bg);
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+  }
+
+  &__error {
+    color: var(--color-danger);
+  }
+}
+
+// Archify maps view (/archify). Rendered outside the editor, so no editor CSS
+// variables are available here.
+.areki-archify {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: #0b1020;
+  color: #e6e9f2;
+  font-family: system-ui, sans-serif;
+
+  &__sidebar {
+    flex: 0 0 280px;
+    overflow-y: auto;
+    padding: 1rem;
+    border-right: 1px solid #263048;
+
+    h2 {
+      margin: 1rem 0 0.75rem;
+      font-size: 1.05rem;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li button {
+      width: 100%;
+      margin-bottom: 0.4rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid #263048;
+      border-radius: 8px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: 0.85rem;
+      text-align: left;
+      cursor: pointer;
+
+      span {
+        display: block;
+        margin-bottom: 0.15rem;
+        color: #8b93a7;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      &:hover,
+      &[aria-current="true"] {
+        border-color: #22d3ee;
+        background: #111a30;
+      }
+    }
+  }
+
+  &__back {
+    padding: 0.45rem 0.8rem;
+    border: 1px solid #263048;
+    border-radius: 6px;
+    background: #111a30;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  &__error {
+    color: #fb7185;
+  }
+
+  &__map {
+    flex: 1;
+    border: 0;
+    background: #0b1020;
+  }
+}

@@ -1,0 +1,302 @@
+@font-face {
+  font-family: "Areki Hand";
+  src: url("/Virgil.woff2") format("woff2");
+  font-display: swap;
+}
+
+.areki-login {
+  --login-bg: #f6f6fb;
+  --login-surface: #ffffff;
+  --login-text: #1b1b1f;
+  --login-muted: #5c5c6b;
+  --login-border: #d6d6e0;
+  --login-primary: #6965db;
+  --login-primary-hover: #5753d0;
+  --login-primary-text: #ffffff;
+  --login-focus: rgba(105, 101, 219, 0.28);
+  --login-danger: #c92a2a;
+  --login-danger-bg: #fff0f0;
+  --login-warning: #8a5a00;
+  --login-showcase-bg: #ecebfd;
+  --login-node: #ffffff;
+  --login-node-main: #d0cefa;
+  --login-stroke: #2f2d6b;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--login-bg);
+  color: var(--login-text);
+  font-family: "Assistant", system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+
+  @media (prefers-color-scheme: dark) {
+    --login-bg: #121212;
+    --login-surface: #1e1e22;
+    --login-text: #ececf1;
+    --login-muted: #a3a3b2;
+    --login-border: #3a3a44;
+    --login-primary: #a8a5ff;
+    --login-primary-hover: #bdbaff;
+    --login-primary-text: #121212;
+    --login-focus: rgba(168, 165, 255, 0.3);
+    --login-danger: #ff8787;
+    --login-danger-bg: #3b1d1d;
+    --login-warning: #ffc96b;
+    --login-showcase-bg: #1b1a2e;
+    --login-node: #232236;
+    --login-node-main: #3c3a75;
+    --login-stroke: #c9c7ff;
+  }
+
+  &__showcase {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 2.5rem 3rem;
+    background: var(--login-showcase-bg);
+    overflow: hidden;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+
+    &--compact {
+      display: none;
+    }
+  }
+
+  &__logo {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 2px solid var(--login-stroke);
+    border-radius: 0.7rem 0.55rem 0.75rem 0.5rem;
+    background: var(--login-primary);
+    color: var(--login-primary-text);
+    font-family: "Areki Hand", cursive;
+    font-size: 1.25rem;
+  }
+
+  &__graph {
+    align-self: center;
+    width: min(100%, 440px);
+    height: auto;
+  }
+
+  &__graph-edge {
+    fill: none;
+    stroke: var(--login-stroke);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    opacity: 0.75;
+    animation: areki-login-draw 1.4s ease-out forwards;
+  }
+
+  &__graph-node {
+    fill: var(--login-node);
+    stroke: var(--login-stroke);
+    stroke-width: 2;
+
+    &--main {
+      fill: var(--login-node-main);
+      stroke-width: 2.5;
+    }
+  }
+
+  &__graph-label {
+    fill: var(--login-stroke);
+    font-family: "Areki Hand", cursive;
+    font-size: 15px;
+    text-anchor: middle;
+  }
+
+  &__tagline {
+    max-width: 26rem;
+    margin: 0;
+    font-family: "Areki Hand", cursive;
+    font-size: 1.35rem;
+    line-height: 1.4;
+    color: var(--login-stroke);
+  }
+
+  &__panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    width: 100%;
+    max-width: 22rem;
+  }
+
+  &__title {
+    margin: 0 0 0.35rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  &__subtitle {
+    margin: 0;
+    color: var(--login-muted);
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      height: 2.75rem;
+      padding: 0 0.85rem;
+      border: 1px solid var(--login-border);
+      border-radius: 0.6rem;
+      background: var(--login-surface);
+      color: var(--login-text);
+      font: inherit;
+      font-weight: 400;
+      font-size: 1rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--login-primary);
+        box-shadow: 0 0 0 3px var(--login-focus);
+      }
+
+      &[aria-invalid="true"] {
+        border-color: var(--login-danger);
+      }
+    }
+  }
+
+  &__password {
+    position: relative;
+
+    input {
+      padding-right: 2.75rem;
+    }
+  }
+
+  &__reveal {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: var(--login-muted);
+    cursor: pointer;
+    transform: translateY(-50%);
+
+    &:hover {
+      color: var(--login-text);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--login-primary);
+      outline-offset: 1px;
+    }
+  }
+
+  &__hint {
+    margin: -0.5rem 0 0;
+    color: var(--login-warning);
+    font-size: 0.85rem;
+  }
+
+  &__error {
+    margin: 0;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.6rem;
+    background: var(--login-danger-bg);
+    color: var(--login-danger);
+    font-size: 0.9rem;
+  }
+
+  &__submit {
+    height: 2.85rem;
+    margin-top: 0.25rem;
+    border: 0;
+    border-radius: 0.6rem;
+    background: var(--login-primary);
+    color: var(--login-primary-text);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s, opacity 0.15s;
+
+    &:hover:not(:disabled) {
+      background: var(--login-primary-hover);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--login-focus);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  &__footnote {
+    margin: 0.5rem 0 0;
+    color: var(--login-muted);
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+
+    &__showcase {
+      display: none;
+    }
+
+    &__brand--compact {
+      display: flex;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__graph-edge {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+@keyframes areki-login-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
