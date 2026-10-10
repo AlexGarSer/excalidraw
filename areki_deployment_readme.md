@@ -2,49 +2,50 @@
 
 This guide describes how to deploy the Areki OSINT Dashboard (customized Excalidraw fork) and its backend to a Hostinger KVM 2 VPS.
 
+## Architecture
+
+```
+Internet ──443──> host nginx (TLS, certbot)
+                     │
+                     └──> 127.0.0.1:3000  excalidraw container (nginx)
+                                             ├── /        static app (SPA)
+                                             └── /api/*   ──> backend:3001 (docker network only)
+```
+
+- The frontend and the API share the same origin, so the session cookie is `HttpOnly`, `Secure` and `SameSite=Strict`.
+- The backend has **no published port**: it is only reachable through `/api/` on the frontend container.
+- The frontend container only listens on `127.0.0.1`, so it can't be reached by bypassing the host nginx (Docker ignores `ufw` rules for published ports).
+
 ## Prerequisites
 
 - A Hostinger KVM 2 VPS with Ubuntu 22.04 or 24.04 installed.
 - Root or sudo access to the VPS.
-- A registered domain name pointing to the VPS IP (optional, but recommended).
+- A domain name pointing to the VPS IP. **HTTPS is required**: the session cookie is `Secure`, and Excalidraw's encryption, clipboard and PWA features only work in a secure context.
 
 ## Setup Instructions
 
 ### 1. Connect to your VPS
 
-Connect via SSH using your terminal:
-
 ```bash
-ssh root@your_vps_ip
+ssh root@srv1995398.hstgr.cloud
 ```
 
 ### 2. Install Docker and Docker Compose
 
-Update the package index and install Docker dependencies:
-
 ```bash
 sudo apt update
 sudo apt upgrade -y
-sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
-```
+sudo apt install ca-certificates curl -y
 
-Add the official Docker GPG key and repository:
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-```bash
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-```
-
-Install Docker and Docker Compose:
-
-```bash
 sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 ```
 
 ### 3. Clone the Repository
-
-Clone your customized Excalidraw repository to the VPS:
 
 ```bash
 git clone https://github.com/your-org/areki-dashboard.git
@@ -55,60 +56,50 @@ cd areki-dashboard
 
 ### 4. Configure Environment Variables
 
-The backend accepts the `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables for the login credentials. You can set these in a `.env` file or export them directly before running docker-compose.
+The backend **refuses to start** unless these are set:
 
-Create a `.env` file in the root directory:
+| Variable | Description |
+|---|---|
+| `ADMIN_USERNAME` | Login user |
+| `ADMIN_PASSWORD` | Login password (use a long, random one) |
+| `SESSION_SECRET` | Key used to sign session cookies, at least 32 characters |
+| `SESSION_TTL_HOURS` | Optional, session lifetime (default `12`) |
+| `COOKIE_SECURE` | Optional, default `true`. Set to `false` **only** to test over plain http |
 
 ```bash
-cat > .env << ENV_VARS
-ADMIN_USERNAME=your_admin_user
-ADMIN_PASSWORD=your_secure_password
-ENV_VARS
+cp .env.example .env
+sed -i "s/^SESSION_SECRET=.*/SESSION_SECRET=$(openssl rand -hex 32)/" .env
+nano .env   # set ADMIN_USERNAME and ADMIN_PASSWORD
+chmod 600 .env
 ```
+
+`.env` is git-ignored; never commit it. Changing `SESSION_SECRET` logs out every active session.
+
+> Frontend settings (`VITE_APP_*` in `.env.production`) are baked in at **build** time. After changing them, rebuild with `docker compose up -d --build`.
 
 ### 5. Build and Run the Containers
 
-Use Docker Compose to build and start the frontend and backend services:
-
 ```bash
 docker compose up -d --build
+docker compose ps
 ```
 
-This command will:
-1. Build the Node.js backend container based on `backend/Dockerfile`.
-2. Build the Excalidraw frontend container based on the root `Dockerfile`.
-3. Start both services in detached mode (`-d`).
+The first build takes a few minutes (it compiles the whole Excalidraw monorepo). The KVM 2 (8 GB RAM) handles it fine.
 
-The services will be mapped as follows:
-- Frontend: Port 3000
-- Backend: Port 3001
+### 6. Reverse Proxy with Nginx
 
-### 6. Reverse Proxy with Nginx (Recommended)
-
-To serve the dashboard over standard HTTP/HTTPS ports (80/443), install and configure Nginx.
+The frontend container already routes `/api/` to the backend, so the host nginx only needs a single `location`:
 
 ```bash
 sudo apt install nginx -y
-```
 
-Create an Nginx configuration file:
-
-```bash
 cat << 'NGINX_CONF' | sudo tee /etc/nginx/sites-available/areki
 server {
     listen 80;
-    server_name your_domain.com;
+    server_name dashboard.areki.mx;
 
     location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location /api/ {
-        proxy_pass http://localhost:3001/;
+        proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -116,21 +107,58 @@ server {
     }
 }
 NGINX_CONF
-```
 
-Enable the configuration and restart Nginx:
-
-```bash
 sudo ln -s /etc/nginx/sites-available/areki /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### 7. Optional: Secure with Let's Encrypt (HTTPS)
+### 7. Secure with Let's Encrypt (HTTPS) — required
 
 ```bash
 sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d your_domain.com
+sudo certbot --nginx -d dashboard.areki.mx
 ```
 
-Your Areki OSINT Dashboard should now be fully deployed and accessible at your domain or VPS IP!
+Certbot adds the HTTPS server block and the http → https redirect, and renews the certificate automatically.
+
+### 8. Firewall
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
+
+Your Areki OSINT Dashboard is now available at `https://dashboard.areki.mx`.
+
+## Updating
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+## Troubleshooting
+
+- **Login always fails with no error / cookie not kept**: you're on plain http. Set up HTTPS (step 7), or set `COOKIE_SECURE=false` temporarily for testing.
+- **Backend container keeps restarting**: run `docker compose logs backend`; a missing `ADMIN_*` / `SESSION_SECRET` variable is the usual cause.
+- **"Too many failed attempts"**: after 10 failed logins from one IP, logins are blocked for 15 minutes (or until the backend restarts).
+
+## Security notes
+
+- The session protects the routes in the app and every backend endpoint that uses the `requireSession` middleware (`backend/index.js`). The app's JavaScript bundle itself is public, so **any sensitive data (e.g. Archify maps) must be served by the backend behind `requireSession`**, never embedded in the frontend build.
+- Drawings are stored in each user's browser (localStorage/IndexedDB), not on the server.
+- Collaboration, shareable links, libraries and AI still use the public excalidraw.com services configured in `.env.production`. Drawings shared that way leave your server (end-to-end encrypted). To keep everything in-house, self-host [excalidraw-room](https://github.com/excalidraw/excalidraw-room) and a storage backend and point those variables at them.
+
+## Local development
+
+```bash
+# terminal 1 — backend
+cd backend && npm install
+ADMIN_USERNAME=admin ADMIN_PASSWORD=admin SESSION_SECRET=$(openssl rand -hex 32) COOKIE_SECURE=false npm start
+
+# terminal 2 — frontend (Vite proxies /api to http://localhost:3001)
+yarn start
+```

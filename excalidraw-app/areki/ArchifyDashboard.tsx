@@ -33,12 +33,22 @@ export const ArchifyDashboard = () => {
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
-        <button
-            onClick={() => navigate("/dashboard")}
-            style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1000, padding: "8px 16px", cursor: "pointer", background: "white", border: "1px solid #ccc", borderRadius: "4px" }}
-        >
-            Back to Whiteboard
-        </button>
+      <button
+        onClick={() => navigate("/dashboard")}
+        style={{
+          position: "absolute",
+          top: "10px",
+          left: "10px",
+          zIndex: 1000,
+          padding: "8px 16px",
+          cursor: "pointer",
+          background: "white",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+        }}
+      >
+        Back to Whiteboard
+      </button>
       <iframe
         title="Archify Diagram"
         srcDoc={htmlContent}

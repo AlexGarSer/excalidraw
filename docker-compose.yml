@@ -3,29 +3,24 @@ services:
     build:
       context: .
       args:
-        - NODE_ENV=development
+        - NODE_ENV=production
     container_name: excalidraw
+    # only reachable through the host nginx (TLS termination)
     ports:
-      - "3000:80"
-    restart: on-failure
-    stdin_open: true
-    healthcheck:
-      disable: true
-    environment:
-      - NODE_ENV=development
-    volumes:
-      - ./:/opt/node_app/app:delegated
-      - ./package.json:/opt/node_app/package.json
-      - ./yarn.lock:/opt/node_app/yarn.lock
-      - notused:/opt/node_app/app/node_modules
+      - "127.0.0.1:3000:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
 
   backend:
     build:
       context: ./backend
     container_name: areki_backend
-    ports:
-      - "3001:3001"
-    restart: on-failure
-
-volumes:
-  notused:
+    # no published ports: only the excalidraw container talks to it
+    environment:
+      - ADMIN_USERNAME=${ADMIN_USERNAME:?set ADMIN_USERNAME in .env}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      - SESSION_SECRET=${SESSION_SECRET:?set SESSION_SECRET in .env}
+      - SESSION_TTL_HOURS=${SESSION_TTL_HOURS:-12}
+      - COOKIE_SECURE=${COOKIE_SECURE:-true}
+    restart: unless-stopped
