@@ -15,6 +15,10 @@ const COOKIE_SECURE = process.env.COOKIE_SECURE !== "false";
 const ESCENAS_DIR = path.resolve(
   process.env.ESCENAS_DIR || path.join(__dirname, "escenas"),
 );
+// Archify maps (index.json + <id>.html), same deployment as the scenes
+const MAPAS_DIR = path.resolve(
+  process.env.MAPAS_DIR || path.join(__dirname, "mapas"),
+);
 
 const COOKIE_NAME = "areki_session";
 const SESSION_TTL_MS = SESSION_TTL_HOURS * 60 * 60 * 1000;
@@ -174,35 +178,53 @@ app.get("/me", requireSession, (req, res) => {
   res.json({ username: req.session.u });
 });
 
-app.get("/escenas", requireSession, (req, res) => {
-  fs.readFile(path.join(ESCENAS_DIR, "index.json"), "utf8", (err, data) => {
-    if (err) {
-      // no scenes uploaded yet
-      return res.json([]);
-    }
-    res.set("Cache-Control", "no-store").type("json").send(data);
+// read-only catalog of files uploaded to the server: GET <route> returns
+// index.json, GET <route>/:id returns <id><extension>
+const serveCatalog = (route, dir, extension, headers) => {
+  app.get(route, requireSession, (req, res) => {
+    fs.readFile(path.join(dir, "index.json"), "utf8", (err, data) => {
+      if (err) {
+        // nothing uploaded yet
+        return res.json([]);
+      }
+      res.set("Cache-Control", "no-store").type("json").send(data);
+    });
   });
+
+  app.get(`${route}/:id`, requireSession, (req, res) => {
+    const { id } = req.params;
+    // ids are short slugs such as "04a"; never let them form a path
+    if (!/^[0-9a-z_-]{1,64}$/i.test(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    res.set("Cache-Control", "no-store");
+    res.sendFile(`${id}${extension}`, { root: dir, headers }, (err) => {
+      if (err && !res.headersSent) {
+        res.status(404).json({ message: "Not found" });
+      }
+    });
+  });
+};
+
+serveCatalog("/escenas", ESCENAS_DIR, ".excalidraw", {
+  "Content-Type": "application/json",
 });
 
-app.get("/escenas/:id", requireSession, (req, res) => {
-  const { id } = req.params;
-  // ids are toma codes such as "04a"; never let them form a path
-  if (!/^[0-9a-z_-]{1,32}$/i.test(id)) {
-    return res.status(400).json({ message: "Invalid scene id" });
-  }
-  res.set("Cache-Control", "no-store");
-  res.sendFile(
-    `${id}.excalidraw`,
-    {
-      root: ESCENAS_DIR,
-      headers: { "Content-Type": "application/json" },
-    },
-    (err) => {
-      if (err && !res.headersSent) {
-        res.status(404).json({ message: "Scene not found" });
-      }
-    },
-  );
+// Archify maps are standalone HTML with inline scripts. Sandbox them (opaque
+// origin, no access to the session or the parent page) and forbid any
+// network access, even when opened directly instead of in the iframe.
+serveCatalog("/mapas", MAPAS_DIR, ".html", {
+  "Content-Type": "text/html; charset=utf-8",
+  "Content-Security-Policy": [
+    "sandbox allow-scripts allow-downloads",
+    "default-src 'none'",
+    "script-src 'unsafe-inline'",
+    "style-src 'unsafe-inline'",
+    "img-src data: blob:",
+    "font-src data:",
+    "media-src blob:",
+    "frame-ancestors 'self'",
+  ].join("; "),
 });
 
 app.get("/health", (req, res) => {

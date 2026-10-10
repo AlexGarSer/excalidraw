@@ -24,7 +24,10 @@ services:
       - SESSION_TTL_HOURS=${SESSION_TTL_HOURS:-12}
       - COOKIE_SECURE=${COOKIE_SECURE:-true}
       - ESCENAS_DIR=/data/escenas
-    # case diagrams live on the server only (git-ignored, the repo is public)
+      - MAPAS_DIR=/data/mapas
+    # case diagrams and Archify maps live on the server only (git-ignored,
+    # the repo is public)
     volumes:
       - ./escenas:/data/escenas:ro
+      - ./mapas:/data/mapas:ro
     restart: unless-stopped

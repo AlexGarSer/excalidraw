@@ -58,6 +58,18 @@ ssh root@srv1995398.hstgr.cloud chown -R areki-wr:areki-wr /home/areki-wr/areki-
 
 No rebuild or restart is needed: each request reads the files. If `./escenas` doesn't exist the list is simply empty.
 
+## Archify maps (`/api/mapas`)
+
+`/archify` lists and shows standalone HTML maps generated with [tt-a1i/archify](https://github.com/tt-a1i/archify) (`index.json` + `<id>.html` in `./mapas/` on the server, git-ignored, mounted read-only like the scenes). The backend serves them with a CSP `sandbox` (opaque origin, no network) and the page embeds them in a sandboxed iframe, so a map can't reach the session or the parent page.
+
+Upload only the HTML files and the index (the Archify receipts contain local paths):
+
+```bash
+scp ./mapas/*.html ./mapas/index.json root@srv1995398.hstgr.cloud:/home/areki-wr/areki-dashboard/mapas/
+```
+
+The first time, run `docker compose up -d` so the backend picks up the new `MAPAS_DIR` variable and volume.
+
 ## Prerequisites
 
 - A Hostinger KVM 2 VPS with Ubuntu 22.04 or 24.04 installed.
