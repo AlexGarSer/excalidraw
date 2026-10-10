@@ -16,6 +16,35 @@ Internet ──443──> host nginx (TLS, certbot)
 - The backend has **no published port**: it is only reachable through `/api/` on the frontend container.
 - The frontend container only listens on `127.0.0.1`, so it can't be reached by bypassing the host nginx (Docker ignores `ufw` rules for published ports).
 
+## Current production deployment (Traefik)
+
+`srv1995398.hstgr.cloud` already runs **Traefik** on ports 80/443 for other projects (devlex), with the `letsencrypt` resolver and http → https redirection. **Do not install nginx/certbot on the host there** (steps 6–8 below): they would conflict with Traefik.
+
+The app lives in `/home/areki-wr/areki-dashboard` (owned by `areki-wr`) and has a server-only `docker-compose.override.yml` (not in git) that removes the published port and registers the frontend with Traefik:
+
+```yaml
+services:
+  excalidraw:
+    ports: !reset []
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.areki-dashboard.rule=Host(`dashboard.areki.mx`)
+      - traefik.http.routers.areki-dashboard.entrypoints=websecure
+      - traefik.http.routers.areki-dashboard.tls.certresolver=letsencrypt
+      - traefik.http.services.areki-dashboard.loadbalancer.server.port=80
+```
+
+Update it with:
+
+```bash
+ssh root@srv1995398.hstgr.cloud
+cd /home/areki-wr/areki-dashboard
+sudo -u areki-wr git pull
+sudo -u areki-wr docker compose up -d --build
+```
+
+The generic steps below apply to a fresh VPS without a reverse proxy.
+
 ## Prerequisites
 
 - A Hostinger KVM 2 VPS with Ubuntu 22.04 or 24.04 installed.
