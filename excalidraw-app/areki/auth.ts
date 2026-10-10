@@ -46,3 +46,25 @@ export const logout = async () => {
     window.location.assign("/login");
   }
 };
+
+// Sibling sites behind the same login (e.g. vault.areki.mx) send the user to
+// /login?next=<absolute url>. Only follow it to https pages of the dashboard's
+// parent domain, never to an arbitrary site (open redirect).
+export const getExternalNext = (search: string, currentHost: string) => {
+  const next = new URLSearchParams(search).get("next");
+  if (!next) {
+    return null;
+  }
+  try {
+    const url = new URL(next);
+    const parent = currentHost.split(".").slice(-2).join(".");
+    const allowed =
+      url.protocol === "https:" &&
+      url.username === "" &&
+      url.password === "" &&
+      (url.hostname === parent || url.hostname.endsWith(`.${parent}`));
+    return allowed ? url.href : null;
+  } catch {
+    return null;
+  }
+};

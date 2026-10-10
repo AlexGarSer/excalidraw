@@ -70,6 +70,27 @@ scp ./mapas/*.html ./mapas/index.json root@srv1995398.hstgr.cloud:/home/areki-wr
 
 The first time, run `docker compose up -d` so the backend picks up the new `MAPAS_DIR` variable and volume.
 
+## Obsidian vault (`vault.areki.mx`)
+
+The case vault is published as a static [Quartz](https://quartz.jzhao.xyz) site (notes, backlinks, Obsidian-style graph). The excalidraw nginx container serves it for `Host: vault.areki.mx` from `./vault` (git-ignored, mounted read-only) and asks the backend (`auth_request` → `/me`) on every request: without a session it redirects to `https://dashboard.areki.mx/login?next=…`, and after login the user goes back to the vault. The login only follows `next` to `https://` pages of the dashboard's parent domain.
+
+One-time setup:
+
+1. DNS: an `A` record `vault.areki.mx` → the VPS IP (same as `dashboard`).
+2. `.env`: `COOKIE_DOMAIN=.areki.mx`, so the session cookie is sent to both sites. Everyone has to log in again once.
+3. `docker-compose.override.yml`: route both hosts to the same container:
+   ```yaml
+   - traefik.http.routers.areki-dashboard.rule=Host(`dashboard.areki.mx`) || Host(`vault.areki.mx`)
+   ```
+4. Upload the site and recreate the containers:
+   ```bash
+   scp -r ./sitio/* root@srv1995398.hstgr.cloud:/home/areki-wr/areki-dashboard/vault/
+   ssh root@srv1995398.hstgr.cloud "cd /home/areki-wr/areki-dashboard && docker compose up -d --build"
+   ```
+5. Check that nginx has the module: `docker exec excalidraw nginx -V 2>&1 | grep -o http_auth_request_module`.
+
+To update the vault later, rebuild it and repeat the `scp`; no restart is needed.
+
 ## Prerequisites
 
 - A Hostinger KVM 2 VPS with Ubuntu 22.04 or 24.04 installed.
@@ -119,6 +140,7 @@ The backend **refuses to start** unless these are set:
 | `SESSION_SECRET` | Key used to sign session cookies, at least 32 characters |
 | `SESSION_TTL_HOURS` | Optional, session lifetime (default `12`) |
 | `COOKIE_SECURE` | Optional, default `true`. Set to `false` **only** to test over plain http |
+| `COOKIE_DOMAIN` | Optional. `.areki.mx` shares the login with `vault.areki.mx`; empty = this host only |
 
 ```bash
 cp .env.example .env

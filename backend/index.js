@@ -10,6 +10,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const SESSION_TTL_HOURS = Number(process.env.SESSION_TTL_HOURS || 12);
 // Set COOKIE_SECURE=false only for local testing over plain http
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "false";
+// Share the session with sibling sites (vault.areki.mx) by scoping the cookie
+// to the parent domain, e.g. COOKIE_DOMAIN=.areki.mx. Unset = this host only.
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 // Excalidraw scenes (index.json + <id>.excalidraw). Mounted read-only from the
 // host, kept out of git: the repository is public.
 const ESCENAS_DIR = path.resolve(
@@ -93,6 +96,7 @@ const cookieOptions = {
   secure: COOKIE_SECURE,
   sameSite: "strict",
   path: "/",
+  domain: COOKIE_DOMAIN,
 };
 
 // -----------------------------------------------------------------------------
@@ -171,6 +175,10 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req, res) => {
   res.clearCookie(COOKIE_NAME, cookieOptions);
+  if (COOKIE_DOMAIN) {
+    // also drop a host-only cookie issued before COOKIE_DOMAIN was set
+    res.clearCookie(COOKIE_NAME, { ...cookieOptions, domain: undefined });
+  }
   res.status(204).end();
 });
 

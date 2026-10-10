@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { fetchSession, login } from "./auth";
+import { fetchSession, getExternalNext, login } from "./auth";
+import { ObsidianGraph } from "./ObsidianGraph";
 
 import "./Login.scss";
 
@@ -13,71 +14,6 @@ const errorMessages: Record<string, string> = {
   "Could not reach the server": "No se pudo conectar con el servidor.",
   "Login failed": "No se pudo iniciar sesión. Inténtalo de nuevo.",
 };
-
-// decorative investigation graph: entities linked around a central case
-const graphNodes = [
-  { x: 200, y: 170, r: 34, label: "Caso" },
-  { x: 70, y: 70, r: 22, label: "Persona" },
-  { x: 335, y: 80, r: 22, label: "Dominio" },
-  { x: 60, y: 285, r: 22, label: "Teléfono" },
-  { x: 345, y: 270, r: 22, label: "Cuenta" },
-  { x: 205, y: 345, r: 18, label: "IP" },
-];
-
-const graphEdges: [number, number][] = [
-  [0, 1],
-  [0, 2],
-  [0, 3],
-  [0, 4],
-  [0, 5],
-  [1, 2],
-  [3, 5],
-];
-
-const InvestigationGraph = () => (
-  <svg
-    className="areki-login__graph"
-    viewBox="0 0 400 400"
-    aria-hidden="true"
-    focusable="false"
-  >
-    {graphEdges.map(([from, to]) => {
-      const a = graphNodes[from];
-      const b = graphNodes[to];
-      // slight bow so the lines feel hand drawn
-      const mx = (a.x + b.x) / 2 + (b.y - a.y) * 0.06;
-      const my = (a.y + b.y) / 2 - (b.x - a.x) * 0.06;
-      return (
-        <path
-          key={`${from}-${to}`}
-          className="areki-login__graph-edge"
-          d={`M${a.x} ${a.y} Q${mx} ${my} ${b.x} ${b.y}`}
-        />
-      );
-    })}
-    {graphNodes.map((node, index) => (
-      <g key={node.label}>
-        <circle
-          className={
-            index === 0
-              ? "areki-login__graph-node areki-login__graph-node--main"
-              : "areki-login__graph-node"
-          }
-          cx={node.x}
-          cy={node.y}
-          r={node.r}
-        />
-        <text
-          className="areki-login__graph-label"
-          x={node.x}
-          y={node.y + node.r + 18}
-        >
-          {node.label}
-        </text>
-      </g>
-    ))}
-  </svg>
-);
 
 const EyeIcon = ({ open }: { open: boolean }) => (
   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -117,15 +53,28 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from || "/";
+  // set by sibling sites that share this login (vault.areki.mx)
+  const externalNext = getExternalNext(
+    location.search,
+    window.location.hostname,
+  );
+
+  const goNext = useCallback(() => {
+    if (externalNext) {
+      window.location.assign(externalNext);
+    } else {
+      navigate(from, { replace: true });
+    }
+  }, [externalNext, from, navigate]);
 
   // skip the form when there's already a valid session
   useEffect(() => {
     fetchSession().then((session) => {
       if (session) {
-        navigate(from, { replace: true });
+        goNext();
       }
     });
-  }, [from, navigate]);
+  }, [goNext]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +83,7 @@ export const Login = () => {
     const result = await login(username, password);
     setSubmitting(false);
     if (result.ok) {
-      navigate(from, { replace: true });
+      goNext();
     } else {
       setError(errorMessages[result.message] || result.message);
     }
@@ -153,7 +102,7 @@ export const Login = () => {
           </span>
           Areki
         </div>
-        <InvestigationGraph />
+        <ObsidianGraph className="areki-login__graph" />
         <p className="areki-login__tagline">
           Conecta personas, cuentas y dominios en un solo lienzo.
         </p>

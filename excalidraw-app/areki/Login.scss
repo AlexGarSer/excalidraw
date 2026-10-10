@@ -21,6 +21,8 @@
   --login-node: #ffffff;
   --login-node-main: #d0cefa;
   --login-stroke: #2f2d6b;
+  --login-graph-node: #8b8aa3;
+  --login-graph-link: #cfcde3;
 
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -48,6 +50,8 @@
     --login-node: #232236;
     --login-node-main: #3c3a75;
     --login-stroke: #c9c7ff;
+    --login-graph-node: #9a99b0;
+    --login-graph-link: #3b3a52;
   }
 
   &__showcase {
@@ -87,39 +91,13 @@
     font-size: 1.25rem;
   }
 
+  // Obsidian-style force graph (ObsidianGraph.tsx draws on this canvas)
   &__graph {
+    display: block;
     align-self: center;
     width: min(100%, 440px);
-    height: auto;
-  }
-
-  &__graph-edge {
-    fill: none;
-    stroke: var(--login-stroke);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-dasharray: 600;
-    stroke-dashoffset: 600;
-    opacity: 0.75;
-    animation: areki-login-draw 1.4s ease-out forwards;
-  }
-
-  &__graph-node {
-    fill: var(--login-node);
-    stroke: var(--login-stroke);
-    stroke-width: 2;
-
-    &--main {
-      fill: var(--login-node-main);
-      stroke-width: 2.5;
-    }
-  }
-
-  &__graph-label {
-    fill: var(--login-stroke);
-    font-family: "Areki Hand", cursive;
-    font-size: 15px;
-    text-anchor: middle;
+    aspect-ratio: 1;
+    touch-action: none;
   }
 
   &__tagline {
@@ -285,18 +263,5 @@
       display: flex;
       margin-bottom: 0.5rem;
     }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    &__graph-edge {
-      animation: none;
-      stroke-dashoffset: 0;
-    }
-  }
-}
-
-@keyframes areki-login-draw {
-  to {
-    stroke-dashoffset: 0;
   }
 }

@@ -8,6 +8,10 @@ services:
     # only reachable through the host nginx (TLS termination)
     ports:
       - "127.0.0.1:3000:80"
+    # Obsidian vault site (Quartz build) served as vault.areki.mx; uploaded to
+    # the server only (git-ignored, the repo is public)
+    volumes:
+      - ./vault:/usr/share/nginx/vault:ro
     restart: unless-stopped
     depends_on:
       - backend
@@ -23,6 +27,8 @@ services:
       - SESSION_SECRET=${SESSION_SECRET:?set SESSION_SECRET in .env}
       - SESSION_TTL_HOURS=${SESSION_TTL_HOURS:-12}
       - COOKIE_SECURE=${COOKIE_SECURE:-true}
+      # .areki.mx shares the login with vault.areki.mx; empty = this host only
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN:-}
       - ESCENAS_DIR=/data/escenas
       - MAPAS_DIR=/data/mapas
     # case diagrams and Archify maps live on the server only (git-ignored,
