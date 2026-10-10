@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 
 const PORT = Number(process.env.PORT || 3001);
@@ -8,6 +10,11 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const SESSION_TTL_HOURS = Number(process.env.SESSION_TTL_HOURS || 12);
 // Set COOKIE_SECURE=false only for local testing over plain http
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "false";
+// Excalidraw scenes (index.json + <id>.excalidraw). Mounted read-only from the
+// host, kept out of git: the repository is public.
+const ESCENAS_DIR = path.resolve(
+  process.env.ESCENAS_DIR || path.join(__dirname, "escenas"),
+);
 
 const COOKIE_NAME = "areki_session";
 const SESSION_TTL_MS = SESSION_TTL_HOURS * 60 * 60 * 1000;
@@ -165,6 +172,37 @@ app.post("/logout", (req, res) => {
 
 app.get("/me", requireSession, (req, res) => {
   res.json({ username: req.session.u });
+});
+
+app.get("/escenas", requireSession, (req, res) => {
+  fs.readFile(path.join(ESCENAS_DIR, "index.json"), "utf8", (err, data) => {
+    if (err) {
+      // no scenes uploaded yet
+      return res.json([]);
+    }
+    res.set("Cache-Control", "no-store").type("json").send(data);
+  });
+});
+
+app.get("/escenas/:id", requireSession, (req, res) => {
+  const { id } = req.params;
+  // ids are toma codes such as "04a"; never let them form a path
+  if (!/^[0-9a-z_-]{1,32}$/i.test(id)) {
+    return res.status(400).json({ message: "Invalid scene id" });
+  }
+  res.set("Cache-Control", "no-store");
+  res.sendFile(
+    `${id}.excalidraw`,
+    {
+      root: ESCENAS_DIR,
+      headers: { "Content-Type": "application/json" },
+    },
+    (err) => {
+      if (err && !res.headersSent) {
+        res.status(404).json({ message: "Scene not found" });
+      }
+    },
+  );
 });
 
 app.get("/health", (req, res) => {

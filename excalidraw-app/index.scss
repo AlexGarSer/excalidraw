@@ -128,3 +128,40 @@
     }
   }
 }
+
+.areki-case-scenes {
+  h3 {
+    margin: 1rem 0 0.25rem;
+    font-size: 1rem;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  button {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 0;
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--color-on-surface);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--button-hover-bg);
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+  }
+
+  &__error {
+    color: var(--color-danger);
+  }
+}

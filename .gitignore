@@ -29,3 +29,6 @@ dev-dist
 html
 meta*.json
 .claude
+# Areki: case diagrams are uploaded to the server, never committed
+/escenas
+/backend/escenas

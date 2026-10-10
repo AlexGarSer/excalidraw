@@ -45,6 +45,19 @@ sudo -u areki-wr docker compose up -d --build
 
 The generic steps below apply to a fresh VPS without a reverse proxy.
 
+## Case diagrams (`/api/escenas`)
+
+The whiteboard menu has a **Diagramas del caso** item that lists and opens Excalidraw scenes served by the backend behind `requireSession`. The scenes are **not in git** (the repository is public): they live in `./escenas/` on the server (`index.json` + `<id>.excalidraw`), mounted read-only into the backend container.
+
+Upload or update them from your machine:
+
+```bash
+scp -r ./escenas/* root@srv1995398.hstgr.cloud:/home/areki-wr/areki-dashboard/escenas/
+ssh root@srv1995398.hstgr.cloud chown -R areki-wr:areki-wr /home/areki-wr/areki-dashboard/escenas
+```
+
+No rebuild or restart is needed: each request reads the files. If `./escenas` doesn't exist the list is simply empty.
+
 ## Prerequisites
 
 - A Hostinger KVM 2 VPS with Ubuntu 22.04 or 24.04 installed.
